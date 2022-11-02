@@ -1,9 +1,8 @@
 import asyncio
-import time
 import curses
-from random import randint, choice
+import time
 from itertools import cycle
-
+from random import randint, choice
 
 TIC_TIMEOUT = 0.1
 SPACE_KEY_CODE = 32
@@ -176,7 +175,7 @@ async def display_rocket(canvas, rocket_frames):
 def draw(canvas):
     canvas.border()
     rows, columns = canvas.getmaxyx()
-    max_height, max_width = rows - 2, columns - 2
+    star_max_y_axis, star_max_x_axis = rows - 2, columns - 2
     curses.curs_set(False)
     canvas.nodelay(True)
 
@@ -185,7 +184,7 @@ def draw(canvas):
     rocket_frames = [rocket_frame_1, rocket_frame_2]
 
     star_coordinates = [
-        (randint(1, max_height), randint(1, max_width))
+        (randint(1, star_max_y_axis), randint(1, star_max_x_axis))
         for _ in range(100)
     ]
     star_symbols = '+*:.'
