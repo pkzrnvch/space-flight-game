@@ -1,4 +1,4 @@
-# Space rocket game
+# Space flight game
 
 This project is a simple game that uses [curses](https://docs.python.org/3/library/curses.html) python module to display graphics. Currently it's functionality is limited to dispaying stars in the background and allowing player to control rocket moving within terminal window's borders, more functions are underway.
 
