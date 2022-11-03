@@ -12,14 +12,6 @@ UP_KEY_CODE = 259
 DOWN_KEY_CODE = 258
 
 
-def read_frame_file(file_name):
-    """Read frame file"""
-
-    with open(f'frames/{file_name}', 'r') as frame_file:
-        frame = frame_file.read()
-    return frame
-
-
 def draw_frame(canvas, start_row, start_column, text, negative=False):
     """Draw multiline text fragment on canvas, erase text instead of drawing if negative=True is specified."""
 
@@ -179,9 +171,14 @@ def draw(canvas):
     curses.curs_set(False)
     canvas.nodelay(True)
 
-    rocket_frame_1 = read_frame_file('rocket_frame_1.txt')
-    rocket_frame_2 = read_frame_file('rocket_frame_2.txt')
-    rocket_frames = [rocket_frame_1, rocket_frame_2]
+    rocket_frame_files = [
+        'rocket_frame_1.txt',
+        'rocket_frame_2.txt'
+    ]
+    rocket_frames = []
+    for file in rocket_frame_files:
+        with open(f'frames/{file}', 'r') as frame_file:
+            rocket_frames.append(frame_file.read())
 
     star_coordinates = [
         (randint(1, star_max_y_axis), randint(1, star_max_x_axis))
