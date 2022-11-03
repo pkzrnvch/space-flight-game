@@ -136,12 +136,12 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
 async def display_rocket(canvas, rocket_frames):
     """Display rocket movement animation."""
 
-    max_row, max_column = canvas.getmaxyx()
+    rows_number, columns_number = canvas.getmaxyx()
     max_frame_height = max([get_frame_size(frame)[0] for frame in rocket_frames])
     max_frame_width = max([get_frame_size(frame)[1] for frame in rocket_frames])
 
-    row = round(max_row / 2 - max_frame_height / 2)
-    column = round(max_column / 2 - max_frame_width / 2)
+    row = round(rows_number / 2 - max_frame_height / 2)
+    column = round(columns_number / 2 - max_frame_width / 2)
 
     for frame in cycle(rocket_frames):
         draw_frame(canvas, row, column, frame)
@@ -164,8 +164,8 @@ async def display_rocket(canvas, rocket_frames):
 
 def draw(canvas):
     canvas.border()
-    rows, columns = canvas.getmaxyx()
-    star_max_y_axis, star_max_x_axis = rows - 2, columns - 2
+    rows_number, columns_number = canvas.getmaxyx()
+    star_max_y_axis, star_max_x_axis = rows_number - 2, columns_number - 2
     curses.curs_set(False)
     canvas.nodelay(True)
 
