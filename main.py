@@ -85,16 +85,14 @@ def read_controls(canvas):
     return rows_direction, columns_direction, space_pressed
 
 
-async def blink(canvas, row, column, symbol='*'):
+async def blink(canvas, row, column, offset_tics, symbol='*'):
     """Display animation of blinking star, position and symbol can be specified."""
-
-    offset_time = randint(3, 12)
 
     while True:
         for _ in range(20):
             canvas.addstr(row, column, symbol, curses.A_DIM)
             await asyncio.sleep(0)
-        for _ in range(3 + offset_time):
+        for _ in range(3 + offset_tics):
             canvas.addstr(row, column, symbol)
             await asyncio.sleep(0)
         for _ in range(5):
@@ -187,8 +185,13 @@ def draw(canvas):
     star_symbols = '+*:.'
 
     coroutines = [
-        blink(canvas, coordinate[0], coordinate[1], choice(star_symbols))
-        for coordinate in star_coordinates
+        blink(
+            canvas,
+            coordinate[0],
+            coordinate[1],
+            randint(3, 12),
+            choice(star_symbols)
+        ) for coordinate in star_coordinates
     ]
     coroutines.append(display_rocket(canvas, rocket_frames))
 
