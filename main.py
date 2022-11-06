@@ -144,28 +144,32 @@ async def display_rocket(canvas, rocket_frames):
     column = round(columns_number / 2 - max_frame_width / 2)
 
     for frame in cycle(rocket_frames):
-        draw_frame(canvas, row, column, frame)
-        await asyncio.sleep(0)
-
         row_direction, column_direction, _ = read_controls(canvas)
         next_row = row + row_direction
         next_column = column + column_direction
-        await asyncio.sleep(0)
-
-        row_direction, column_direction, _ = read_controls(canvas)
-        next_row += row_direction
-        next_column += column_direction
-
-        draw_frame(canvas, row, column, frame, negative=True)
-        if max_row - max_frame_height > next_row > 0 \
-                and max_column - max_frame_width > next_column > 0:
+        if rows_number - max_frame_height > next_row > 0 \
+                and columns_number - max_frame_width > next_column > 0:
             row, column = next_row, next_column
+        draw_frame(canvas, row, column, frame)
+        await asyncio.sleep(0)
+        draw_frame(canvas, row, column, frame, negative=True)
 
 
 def draw(canvas):
     canvas.border()
+    # window.getmaxyx() actually returns total number of rows and columns:
     rows_number, columns_number = canvas.getmaxyx()
-    star_max_y_axis, star_max_x_axis = rows_number - 2, columns_number - 2
+
+    # Since row and column numeration starts at zero:
+    max_row, max_column = rows_number - 1, columns_number - 1
+
+    # Since we want stars to be displayed in the area within borders:
+    border_size = 1
+    max_row_within_borders = max_row - border_size
+    max_column_within_borders = max_column - border_size
+    min_row_within_borders = 0 + border_size
+    min_column_within_borders = 0 + border_size
+
     curses.curs_set(False)
     canvas.nodelay(True)
 
@@ -176,12 +180,14 @@ def draw(canvas):
     rocket_frames = []
     for file in rocket_frame_files:
         with open(f'frames/{file}', 'r') as frame_file:
-            rocket_frames.append(frame_file.read())
+            frame = frame_file.read()
+            rocket_frames.append(frame)
+            rocket_frames.append(frame)
 
-    star_coordinates = [
-        (randint(1, star_max_y_axis), randint(1, star_max_x_axis))
-        for _ in range(100)
-    ]
+    star_coordinates = [(
+        randint(min_row_within_borders, max_row_within_borders),
+        randint(min_column_within_borders, max_column_within_borders)
+    ) for _ in range(100)]
     star_symbols = '+*:.'
 
     coroutines = [
