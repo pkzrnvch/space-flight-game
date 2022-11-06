@@ -157,8 +157,8 @@ async def display_rocket(canvas, rocket_frames):
 
     for frame in cycle(rocket_frames):
         row_direction, column_direction, _ = read_controls(canvas)
-        next_row = row + row_direction * 10
-        next_column = column + column_direction * 10
+        next_row = row + row_direction
+        next_column = column + column_direction
         if next_row >= min_row_within_borders:
             row = min(
                 max_row_within_borders - max_frame_height + 1,
@@ -229,9 +229,9 @@ def draw(canvas):
         for coroutine in coroutines.copy():
             try:
                 coroutine.send(None)
-                canvas.refresh()
             except StopIteration:
                 coroutines.remove(coroutine)
+        canvas.refresh()
         time.sleep(TIC_TIMEOUT)
 
 
