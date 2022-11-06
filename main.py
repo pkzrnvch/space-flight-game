@@ -136,7 +136,19 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
 async def display_rocket(canvas, rocket_frames):
     """Display rocket movement animation."""
 
+    # window.getmaxyx() actually returns total number of rows and columns:
     rows_number, columns_number = canvas.getmaxyx()
+
+    # Since row and column numeration starts at zero:
+    max_row, max_column = rows_number - 1, columns_number - 1
+
+    # Since we want rocket to be displayed in the area within borders:
+    border_size = 1
+    max_row_within_borders = max_row - border_size
+    max_column_within_borders = max_column - border_size
+    min_row_within_borders = 0 + border_size
+    min_column_within_borders = 0 + border_size
+
     max_frame_height = max([get_frame_size(frame)[0] for frame in rocket_frames])
     max_frame_width = max([get_frame_size(frame)[1] for frame in rocket_frames])
 
@@ -145,11 +157,22 @@ async def display_rocket(canvas, rocket_frames):
 
     for frame in cycle(rocket_frames):
         row_direction, column_direction, _ = read_controls(canvas)
-        next_row = row + row_direction
-        next_column = column + column_direction
-        if rows_number - max_frame_height > next_row > 0 \
-                and columns_number - max_frame_width > next_column > 0:
-            row, column = next_row, next_column
+        next_row = row + row_direction * 10
+        next_column = column + column_direction * 10
+        if next_row >= min_row_within_borders:
+            row = min(
+                max_row_within_borders - max_frame_height + 1,
+                next_row
+            )
+        else:
+            row = min_row_within_borders
+        if next_column >= min_column_within_borders:
+            column = min(
+                max_column_within_borders - max_frame_width + 1,
+                next_column
+            )
+        else:
+            column = min_column_within_borders
         draw_frame(canvas, row, column, frame)
         await asyncio.sleep(0)
         draw_frame(canvas, row, column, frame, negative=True)
@@ -157,6 +180,7 @@ async def display_rocket(canvas, rocket_frames):
 
 def draw(canvas):
     canvas.border()
+
     # window.getmaxyx() actually returns total number of rows and columns:
     rows_number, columns_number = canvas.getmaxyx()
 
