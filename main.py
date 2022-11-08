@@ -142,34 +142,30 @@ async def display_rocket(canvas, rocket_frames):
     # Since row and column numeration starts at zero:
     max_row, max_column = rows_number - 1, columns_number - 1
 
-    # Since we want rocket to be displayed in the area within borders:
-    border_size = 1
-    max_row_within_borders = max_row - border_size
-    max_column_within_borders = max_column - border_size
-    min_row_within_borders = 0 + border_size
-    min_column_within_borders = 0 + border_size
+    # Since we want stars to be displayed in the area within borders:
+    max_row_within_borders = max_row - 1
+    max_column_within_borders = max_column - 1
+    min_row_within_borders = min_column_within_borders = 1
 
-    max_frame_height = max([get_frame_size(frame)[0] for frame in rocket_frames])
-    max_frame_width = max([get_frame_size(frame)[1] for frame in rocket_frames])
-
-    row = round(rows_number / 2 - max_frame_height / 2)
-    column = round(columns_number / 2 - max_frame_width / 2)
+    frame_height, frame_width = get_frame_size(rocket_frames[0])
+    row = round(rows_number / 2 - frame_height / 2)
+    column = round(columns_number / 2 - frame_width / 2)
 
     for frame in cycle(rocket_frames):
         row_direction, column_direction, _ = read_controls(canvas)
-        next_row = row + row_direction
-        next_column = column + column_direction
-        if next_row >= min_row_within_borders:
+        row += row_direction
+        column += column_direction
+        if row >= min_row_within_borders:
             row = min(
-                max_row_within_borders - max_frame_height + 1,
-                next_row
+                max_row_within_borders - frame_height + 1,
+                row
             )
         else:
             row = min_row_within_borders
-        if next_column >= min_column_within_borders:
+        if column >= min_column_within_borders:
             column = min(
-                max_column_within_borders - max_frame_width + 1,
-                next_column
+                max_column_within_borders - frame_width + 1,
+                column
             )
         else:
             column = min_column_within_borders
@@ -188,11 +184,9 @@ def draw(canvas):
     max_row, max_column = rows_number - 1, columns_number - 1
 
     # Since we want stars to be displayed in the area within borders:
-    border_size = 1
-    max_row_within_borders = max_row - border_size
-    max_column_within_borders = max_column - border_size
-    min_row_within_borders = 0 + border_size
-    min_column_within_borders = 0 + border_size
+    max_row_within_borders = max_row - 1
+    max_column_within_borders = max_column - 1
+    min_row_within_borders = min_column_within_borders = 1
 
     curses.curs_set(False)
     canvas.nodelay(True)
