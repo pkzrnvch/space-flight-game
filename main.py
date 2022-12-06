@@ -190,6 +190,19 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
         row += speed
 
 
+async def fill_orbit_with_garbage(canvas, garbage_frames, max_column_within_borders):
+    while True:
+        coroutines.append(
+            fly_garbage(
+                canvas,
+                column=randint(1, max_column_within_borders),
+                garbage_frame=choice(garbage_frames),
+            )
+        )
+        for _ in range(5):
+            await asyncio.sleep(0)
+
+
 def draw(canvas):
     canvas.border()
 
@@ -211,6 +224,16 @@ def draw(canvas):
         'rocket_frame_1.txt',
         'rocket_frame_2.txt'
     ]
+
+    garbage_frame_files = [
+        'duck.txt',
+        'hubble.txt',
+        'lamp.txt',
+        'trash_large.txt',
+        'trash_small.txt',
+        'trash_xl.txt'
+    ]
+
     rocket_frames = []
     for file in rocket_frame_files:
         with open(f'frames/rocket_frames/{file}', 'r') as frame_file:
@@ -218,22 +241,40 @@ def draw(canvas):
             rocket_frames.append(frame)
             rocket_frames.append(frame)
 
+    garbage_frames = []
+    for file in garbage_frame_files:
+        with open(f'frames/garbage_frames/{file}', 'r') as frame_file:
+            frame = frame_file.read()
+            garbage_frames.append(frame)
+            garbage_frames.append(frame)
+
     star_coordinates = [(
         randint(min_row_within_borders, max_row_within_borders),
         randint(min_column_within_borders, max_column_within_borders)
     ) for _ in range(100)]
     star_symbols = '+*:.'
 
-    coroutines = [
-        blink(
+    coroutines.extend(
+        [blink(
             canvas,
             coordinate[0],
             coordinate[1],
             randint(3, 12),
             choice(star_symbols)
-        ) for coordinate in star_coordinates
-    ]
-    coroutines.append(display_rocket(canvas, rocket_frames))
+        ) for coordinate in star_coordinates]
+    )
+
+    coroutines.append(
+        display_rocket(canvas, rocket_frames)
+    )
+
+    coroutines.append(
+        fill_orbit_with_garbage(
+            canvas,
+            garbage_frames,
+            max_column_within_borders
+        )
+    )
 
     while True:
         for coroutine in coroutines.copy():
@@ -246,5 +287,6 @@ def draw(canvas):
 
 
 if __name__ == '__main__':
+    coroutines = []
     curses.update_lines_cols()
     curses.wrapper(draw)
