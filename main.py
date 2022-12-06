@@ -12,6 +12,11 @@ UP_KEY_CODE = 259
 DOWN_KEY_CODE = 258
 
 
+async def sleep(tics=1):
+    for _ in range(tics):
+        await asyncio.sleep(0)
+
+
 def draw_frame(canvas, start_row, start_column, text, negative=False):
     """Draw multiline text fragment on canvas, erase text instead of drawing if negative=True is specified."""
 
@@ -89,18 +94,14 @@ async def blink(canvas, row, column, offset_tics, symbol='*'):
     """Display animation of blinking star, position and symbol can be specified."""
 
     while True:
-        for _ in range(20):
-            canvas.addstr(row, column, symbol, curses.A_DIM)
-            await asyncio.sleep(0)
-        for _ in range(3 + offset_tics):
-            canvas.addstr(row, column, symbol)
-            await asyncio.sleep(0)
-        for _ in range(5):
-            canvas.addstr(row, column, symbol, curses.A_BOLD)
-            await asyncio.sleep(0)
-        for _ in range(3):
-            canvas.addstr(row, column, symbol)
-            await asyncio.sleep(0)
+        canvas.addstr(row, column, symbol, curses.A_DIM)
+        await sleep(20 + offset_tics)
+        canvas.addstr(row, column, symbol)
+        await sleep(3)
+        canvas.addstr(row, column, symbol, curses.A_BOLD)
+        await sleep(5)
+        canvas.addstr(row, column, symbol)
+        await sleep(3)
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
@@ -109,10 +110,10 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
     row, column = start_row, start_column
 
     canvas.addstr(round(row), round(column), '*')
-    await asyncio.sleep(0)
+    await sleep()
 
     canvas.addstr(round(row), round(column), 'O')
-    await asyncio.sleep(0)
+    await sleep()
     canvas.addstr(round(row), round(column), ' ')
 
     row += rows_speed
@@ -127,7 +128,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
 
     while 0 < row < max_row and 0 < column < max_column:
         canvas.addstr(round(row), round(column), symbol)
-        await asyncio.sleep(0)
+        await sleep()
         canvas.addstr(round(row), round(column), ' ')
         row += rows_speed
         column += columns_speed
@@ -170,7 +171,7 @@ async def display_rocket(canvas, rocket_frames):
         else:
             column = min_column_within_borders
         draw_frame(canvas, row, column, frame)
-        await asyncio.sleep(0)
+        await sleep()
         draw_frame(canvas, row, column, frame, negative=True)
 
 
@@ -178,29 +179,27 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     """Animate garbage, flying from top to bottom. Сolumn position will stay same, as specified on start."""
     rows_number, columns_number = canvas.getmaxyx()
 
-    column = max(column, 0)
-    column = min(column, columns_number - 1)
-
-    row = 0
+    row = 1
 
     while row < rows_number:
         draw_frame(canvas, row, column, garbage_frame)
-        await asyncio.sleep(0)
+        await sleep()
         draw_frame(canvas, row, column, garbage_frame, negative=True)
         row += speed
 
 
 async def fill_orbit_with_garbage(canvas, garbage_frames, max_column_within_borders):
     while True:
+        frame = choice(garbage_frames)
+        _, frame_columns_number = get_frame_size(frame)
         coroutines.append(
             fly_garbage(
                 canvas,
-                column=randint(1, max_column_within_borders),
-                garbage_frame=choice(garbage_frames),
+                column=randint(1, max_column_within_borders - frame_columns_number),
+                garbage_frame=frame,
             )
         )
-        for _ in range(5):
-            await asyncio.sleep(0)
+        await sleep(10)
 
 
 def draw(canvas):
@@ -283,6 +282,7 @@ def draw(canvas):
             except StopIteration:
                 coroutines.remove(coroutine)
         canvas.refresh()
+        canvas.border()
         time.sleep(TIC_TIMEOUT)
 
 
