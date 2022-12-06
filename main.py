@@ -31,7 +31,7 @@ async def blink(canvas, row, column, offset_tics, symbol='*'):
         await sleep(3)
 
 
-async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
+async def fire(canvas, start_row, start_column, rows_speed=-0.5, columns_speed=0):
     """Display animation of gun shot, direction and speed can be specified."""
 
     row, column = start_row, start_column
@@ -54,6 +54,9 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
     curses.beep()
 
     while 0 < row < max_row and 0 < column < max_column:
+        for obstacle in obstacles:
+            if obstacle.has_collision(row, column):
+                return
         canvas.addstr(round(row), round(column), symbol)
         await sleep()
         canvas.addstr(round(row), round(column), ' ')
@@ -61,7 +64,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         column += columns_speed
 
 
-async def display_rocket(canvas, rocket_frames, max_speed=2):
+async def display_rocket(canvas, rocket_frames, max_speed=3):
     """Display rocket movement animation."""
 
     # window.getmaxyx() actually returns total number of rows and columns:
