@@ -5,91 +5,16 @@ from itertools import cycle
 from random import randint, choice
 
 from physics import update_speed
+from obstacles import Obstacle, show_obstacles
+from curses_tools import draw_frame, get_frame_size, read_controls
+
 
 TIC_TIMEOUT = 0.1
-SPACE_KEY_CODE = 32
-LEFT_KEY_CODE = 260
-RIGHT_KEY_CODE = 261
-UP_KEY_CODE = 259
-DOWN_KEY_CODE = 258
 
 
 async def sleep(tics=1):
     for _ in range(tics):
         await asyncio.sleep(0)
-
-
-def draw_frame(canvas, start_row, start_column, text, negative=False):
-    """Draw multiline text fragment on canvas, erase text instead of drawing if negative=True is specified."""
-
-    rows_number, columns_number = canvas.getmaxyx()
-
-    for row, line in enumerate(text.splitlines(), round(start_row)):
-        if row < 0:
-            continue
-
-        if row >= rows_number:
-            break
-
-        for column, symbol in enumerate(line, round(start_column)):
-            if column < 0:
-                continue
-
-            if column >= columns_number:
-                break
-
-            if symbol == ' ':
-                continue
-
-            # Check that current position is not in a lower right corner
-            # of the window.
-            # Curses will raise exception in that case. Don`t ask why…
-            # https://docs.python.org/3/library/curses.html#curses.window.addch
-            if row == rows_number - 1 and column == columns_number - 1:
-                continue
-
-            symbol = symbol if not negative else ' '
-            canvas.addch(row, column, symbol)
-
-
-def get_frame_size(text):
-    """Calculate size of multiline text fragment, return pair — number of rows and columns."""
-
-    lines = text.splitlines()
-    rows = len(lines)
-    columns = max([len(line) for line in lines])
-    return rows, columns
-
-
-def read_controls(canvas):
-    """Read keys pressed and returns tuple with controls state."""
-
-    rows_direction = columns_direction = 0
-    space_pressed = False
-
-    while True:
-        pressed_key_code = canvas.getch()
-
-        if pressed_key_code == -1:
-            # https://docs.python.org/3/library/curses.html#curses.window.getch
-            break
-
-        if pressed_key_code == UP_KEY_CODE:
-            rows_direction = -1
-
-        if pressed_key_code == DOWN_KEY_CODE:
-            rows_direction = 1
-
-        if pressed_key_code == RIGHT_KEY_CODE:
-            columns_direction = 1
-
-        if pressed_key_code == LEFT_KEY_CODE:
-            columns_direction = -1
-
-        if pressed_key_code == SPACE_KEY_CODE:
-            space_pressed = True
-
-    return rows_direction, columns_direction, space_pressed
 
 
 async def blink(canvas, row, column, offset_tics, symbol='*'):
@@ -196,11 +121,18 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
 
     row = 1
 
+    frame_rows_number, frame_columns_number = get_frame_size(garbage_frame)
+
     while row < rows_number:
-        draw_frame(canvas, row, column, garbage_frame)
-        await sleep()
-        draw_frame(canvas, row, column, garbage_frame, negative=True)
-        row += speed
+        try:
+            obstacle = Obstacle(row, column, frame_rows_number, frame_columns_number)
+            obstacles.append(obstacle)
+            draw_frame(canvas, row, column, garbage_frame)
+            await sleep()
+            draw_frame(canvas, row, column, garbage_frame, negative=True)
+            row += speed
+        finally:
+            obstacles.remove(obstacle)
 
 
 async def fill_orbit_with_garbage(canvas, garbage_frames, max_column_within_borders):
@@ -290,6 +222,10 @@ def draw(canvas):
         )
     )
 
+    coroutines.append(
+        show_obstacles(canvas, obstacles)
+    )
+
     while True:
         for coroutine in coroutines.copy():
             try:
@@ -303,5 +239,6 @@ def draw(canvas):
 
 if __name__ == '__main__':
     coroutines = []
+    obstacles = []
     curses.update_lines_cols()
     curses.wrapper(draw)
