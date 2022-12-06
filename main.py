@@ -136,7 +136,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         column += columns_speed
 
 
-async def display_rocket(canvas, rocket_frames, max_speed=1):
+async def display_rocket(canvas, rocket_frames, max_speed=2):
     """Display rocket movement animation."""
 
     # window.getmaxyx() actually returns total number of rows and columns:
@@ -157,7 +157,7 @@ async def display_rocket(canvas, rocket_frames, max_speed=1):
     row_speed = column_speed = 0
 
     for frame in cycle(rocket_frames):
-        row_direction, column_direction, _ = read_controls(canvas)
+        row_direction, column_direction, space_pressed = read_controls(canvas)
         row_speed, column_speed = update_speed(
             row_speed,
             column_speed,
@@ -183,6 +183,8 @@ async def display_rocket(canvas, rocket_frames, max_speed=1):
             )
         else:
             column = min_column_within_borders
+        if space_pressed:
+            coroutines.append(fire(canvas, row, column + int(frame_width / 2)))
         draw_frame(canvas, row, column, frame)
         await sleep()
         draw_frame(canvas, row, column, frame, negative=True)
