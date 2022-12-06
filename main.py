@@ -4,6 +4,8 @@ import time
 from itertools import cycle
 from random import randint, choice
 
+from physics import update_speed
+
 TIC_TIMEOUT = 0.1
 SPACE_KEY_CODE = 32
 LEFT_KEY_CODE = 260
@@ -134,7 +136,7 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         column += columns_speed
 
 
-async def display_rocket(canvas, rocket_frames):
+async def display_rocket(canvas, rocket_frames, max_speed=1):
     """Display rocket movement animation."""
 
     # window.getmaxyx() actually returns total number of rows and columns:
@@ -152,10 +154,21 @@ async def display_rocket(canvas, rocket_frames):
     row = round(rows_number / 2 - frame_height / 2)
     column = round(columns_number / 2 - frame_width / 2)
 
+    row_speed = column_speed = 0
+
     for frame in cycle(rocket_frames):
         row_direction, column_direction, _ = read_controls(canvas)
-        row += row_direction
-        column += column_direction
+        row_speed, column_speed = update_speed(
+            row_speed,
+            column_speed,
+            row_direction,
+            column_direction,
+            row_speed_limit=max_speed,
+            column_speed_limit=max_speed
+        )
+
+        row += row_speed
+        column += column_speed
         if row >= min_row_within_borders:
             row = min(
                 max_row_within_borders - frame_height + 1,
