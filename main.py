@@ -8,10 +8,11 @@ from physics import update_speed
 from obstacles import Obstacle
 from explosion import explode
 from curses_tools import draw_frame, get_frame_size, read_controls
+from game_scenario import PHRASES, get_garbage_delay_tics
 
 
 TIC_TIMEOUT = 0.1
-GAME_OVER = False
+STARS_AMOUNT = 100
 
 
 async def sleep(tics=1):
@@ -114,7 +115,7 @@ async def display_rocket(canvas, rocket_frames, max_speed=3):
             )
         else:
             column = min_column_within_borders
-        if space_pressed:
+        if space_pressed and current_year >= 2020:
             coroutines.append(fire(canvas, row, column + int(frame_width / 2)))
         draw_frame(canvas, row, column, frame)
         await sleep()
@@ -130,6 +131,7 @@ async def display_rocket(canvas, rocket_frames, max_speed=3):
 
 async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     """Animate garbage, flying from top to bottom. Сolumn position will stay same, as specified on start."""
+
     rows_number, columns_number = canvas.getmaxyx()
 
     row = 1
@@ -138,7 +140,12 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
 
     while row < rows_number:
         try:
-            obstacle = Obstacle(row, column, frame_rows_number, frame_columns_number)
+            obstacle = Obstacle(
+                row,
+                column,
+                frame_rows_number,
+                frame_columns_number
+            )
             obstacles.append(obstacle)
             draw_frame(canvas, row, column, garbage_frame)
             await sleep()
@@ -154,26 +161,31 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
                     explode(canvas, frame_center_row, frame_center_column)
                 )
                 return
-
             if game_over:
                 return
-
         finally:
             obstacles.remove(obstacle)
 
 
 async def fill_orbit_with_garbage(canvas, garbage_frames, max_column_within_borders):
     while not game_over:
+        garbage_delay_tics = get_garbage_delay_tics(current_year)
         frame = choice(garbage_frames)
         _, frame_columns_number = get_frame_size(frame)
-        coroutines.append(
-            fly_garbage(
-                canvas,
-                column=randint(1, max_column_within_borders - frame_columns_number),
-                garbage_frame=frame,
+        if garbage_delay_tics:
+            coroutines.append(
+                fly_garbage(
+                    canvas,
+                    column=randint(
+                        1,
+                        max_column_within_borders - frame_columns_number
+                    ),
+                    garbage_frame=frame,
+                )
             )
-        )
-        await sleep(10)
+            await sleep(garbage_delay_tics)
+        else:
+            await sleep(1)
 
 
 async def show_gameover(canvas):
@@ -184,13 +196,75 @@ async def show_gameover(canvas):
     with open('frames/gameover_frame.txt', 'r') as frame_file:
         game_over_frame = frame_file.read()
     frame_rows_number, frame_columns_number = get_frame_size(game_over_frame)
-    frame_row = int(max_row_within_borders / 2 - frame_rows_number / 2)
-    frame_column = int(max_column_within_borders / 2 - frame_columns_number / 2)
-    draw_frame(canvas, frame_row, frame_column, game_over_frame)
+    frame_position_row = int(
+        max_row_within_borders / 2 - frame_rows_number / 2
+    )
+    frame_position_column = int(
+        max_column_within_borders / 2 - frame_columns_number / 2
+    )
     while True:
-        draw_frame(canvas, frame_row, frame_column, game_over_frame)
+        draw_frame(
+            canvas,
+            frame_position_row,
+            frame_position_column,
+            game_over_frame
+        )
+
         await sleep()
-        draw_frame(canvas, frame_row, frame_column, game_over_frame, negative=True)
+
+        draw_frame(
+            canvas,
+            frame_position_row,
+            frame_position_column,
+            game_over_frame,
+            negative=True
+        )
+
+
+async def pass_years():
+    global current_year
+    while not game_over:
+        await sleep(15)
+        current_year += 1
+
+
+async def draw_year(canvas):
+    rows_number, columns_number = canvas.getmaxyx()
+    year_window_rows = 4
+    year_window_columns = 50
+    year_window = canvas.derwin(
+        year_window_rows,
+        year_window_columns,
+        rows_number - year_window_rows - 1,
+        columns_number - year_window_columns - 1
+    )
+    while not game_over:
+        phrase = PHRASES.get(current_year)
+        if phrase:
+            frame = f'{current_year} - {phrase}'
+        else:
+            frame = str(current_year)
+        frame_rows_number, frame_columns_number = get_frame_size(frame)
+        frame_position_row = int(
+            year_window_rows / 2 - frame_rows_number / 2
+        )
+        frame_position_column = int(
+            year_window_columns / 2 - frame_columns_number / 2
+        )
+        year_window.border()
+        draw_frame(
+            year_window,
+            frame_position_row,
+            frame_position_column,
+            frame)
+        await sleep()
+        draw_frame(
+            year_window,
+            frame_position_row,
+            frame_position_column,
+            frame,
+            negative=True
+        )
 
 
 def draw(canvas):
@@ -241,7 +315,7 @@ def draw(canvas):
     star_coordinates = [(
         randint(min_row_within_borders, max_row_within_borders),
         randint(min_column_within_borders, max_column_within_borders)
-    ) for _ in range(100)]
+    ) for _ in range(STARS_AMOUNT)]
     star_symbols = '+*:.'
 
     coroutines.extend(
@@ -266,6 +340,9 @@ def draw(canvas):
         )
     )
 
+    coroutines.append(draw_year(canvas))
+    coroutines.append(pass_years())
+
     while True:
         for coroutine in coroutines.copy():
             try:
@@ -281,6 +358,7 @@ if __name__ == '__main__':
     coroutines = []
     obstacles = []
     obstacles_in_last_collisions = []
+    current_year = 1957
     game_over = False
     curses.update_lines_cols()
     curses.wrapper(draw)
