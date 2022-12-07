@@ -5,12 +5,13 @@ from itertools import cycle
 from random import randint, choice
 
 from physics import update_speed
-from obstacles import Obstacle, show_obstacles
+from obstacles import Obstacle
 from explosion import explode
 from curses_tools import draw_frame, get_frame_size, read_controls
 
 
 TIC_TIMEOUT = 0.1
+GAME_OVER = False
 
 
 async def sleep(tics=1):
@@ -119,6 +120,13 @@ async def display_rocket(canvas, rocket_frames, max_speed=3):
         await sleep()
         draw_frame(canvas, row, column, frame, negative=True)
 
+        for obstacle in obstacles:
+            if obstacle.has_collision(row, column + int(frame_width / 2)):
+                global game_over
+                game_over = True
+                coroutines.append(show_gameover(canvas))
+                return
+
 
 async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
     """Animate garbage, flying from top to bottom. Сolumn position will stay same, as specified on start."""
@@ -146,12 +154,16 @@ async def fly_garbage(canvas, column, garbage_frame, speed=0.5):
                     explode(canvas, frame_center_row, frame_center_column)
                 )
                 return
+
+            if game_over:
+                return
+
         finally:
             obstacles.remove(obstacle)
 
 
 async def fill_orbit_with_garbage(canvas, garbage_frames, max_column_within_borders):
-    while True:
+    while not game_over:
         frame = choice(garbage_frames)
         _, frame_columns_number = get_frame_size(frame)
         coroutines.append(
@@ -162,6 +174,23 @@ async def fill_orbit_with_garbage(canvas, garbage_frames, max_column_within_bord
             )
         )
         await sleep(10)
+
+
+async def show_gameover(canvas):
+    rows_number, columns_number = canvas.getmaxyx()
+    max_row, max_column = rows_number - 1, columns_number - 1
+    max_row_within_borders = max_row - 1
+    max_column_within_borders = max_column - 1
+    with open('frames/gameover_frame.txt', 'r') as frame_file:
+        game_over_frame = frame_file.read()
+    frame_rows_number, frame_columns_number = get_frame_size(game_over_frame)
+    frame_row = int(max_row_within_borders / 2 - frame_rows_number / 2)
+    frame_column = int(max_column_within_borders / 2 - frame_columns_number / 2)
+    draw_frame(canvas, frame_row, frame_column, game_over_frame)
+    while True:
+        draw_frame(canvas, frame_row, frame_column, game_over_frame)
+        await sleep()
+        draw_frame(canvas, frame_row, frame_column, game_over_frame, negative=True)
 
 
 def draw(canvas):
@@ -237,10 +266,6 @@ def draw(canvas):
         )
     )
 
-    coroutines.append(
-        show_obstacles(canvas, obstacles)
-    )
-
     while True:
         for coroutine in coroutines.copy():
             try:
@@ -256,5 +281,6 @@ if __name__ == '__main__':
     coroutines = []
     obstacles = []
     obstacles_in_last_collisions = []
+    game_over = False
     curses.update_lines_cols()
     curses.wrapper(draw)
